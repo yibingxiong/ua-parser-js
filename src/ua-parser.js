@@ -111,6 +111,7 @@
 
         /**
          * @todo ??这个方法还要好好看下
+         * http://www.cnblogs.com/tugenhua0707/p/5037811.html#_labe0
          * @param {String} ua ua
          * @param {Array} arrays 一个n维数组, 偶数行是正则, 基数行是[name,version](regexes.browser)
          */
@@ -129,13 +130,25 @@
             while (i < arrays.length && !matches) {
 
                 var regex = arrays[i],       // even sequence (0,2,4,..)
+                //
+
+                //     [
+
+                //     // Presto based
+                //     /(opera\smini)\/([\w\.-]+)/i,                                       // Opera Mini
+                //     /(opera\s[mobiletab]+).+version\/([\w\.-]+)/i,                      // Opera Mobi/Tablet
+                //     /(opera).+version\/([\w\.]+)/i,                                     // Opera > 9.80
+                //     /(opera)[\/\s]+([\w\.]+)/i                                          // Opera < 9.80
+                //     ]
+                
                     props = arrays[i + 1];   // odd sequence (1,3,5,..)
+                    // [NAME, VERSION], 
                 j = k = 0;
 
                 // try matching uastring with regexes
                 while (j < regex.length && !matches) {
 
-                    matches = regex[j++].exec(ua);
+                    matches = regex[j++].exec(ua);  // /(opera\smini)\/([\w\.-]+)/.exec(ua)
 
                     if (!!matches) {
                         for (p = 0; p < props.length; p++) {
@@ -147,21 +160,21 @@
                                     if (typeof q[1] == FUNC_TYPE) {
                                         // assign modified match
                                         this[q[0]] = q[1].call(this, match);
-                                    } else {
+                                    } else {    // [NAME, 'Edge'] 这种的
                                         // assign given value, ignore regex match
                                         this[q[0]] = q[1];
                                     }
                                 } else if (q.length == 3) {
                                     // check whether function or regex
                                     //// ///// mapper.str方法
-                                    if (typeof q[1] === FUNC_TYPE && !(q[1].exec && q[1].test)) {
+                                    if (typeof q[1] === FUNC_TYPE && !(q[1].exec && q[1].test)) { // 第二个不是正则, 是function
                                         // call function (usually string mapper)
                                         this[q[0]] = match ? q[1].call(this, match, q[2]) : undefined;
-                                    } else {
+                                    } else {    // 第2个是正则的
                                         // sanitize match using given regex
                                         this[q[0]] = match ? match.replace(q[1], q[2]) : undefined;
                                     }
-                                } else if (q.length == 4) {
+                                } else if (q.length == 4) { // [VENDOR, mapper.str, maps.device.sprint.vendor] 这样的
                                         this[q[0]] = match ? q[3].call(this, match.replace(q[1], q[2])) : undefined;
                                 }
                             } else {
