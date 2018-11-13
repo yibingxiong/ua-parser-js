@@ -43,7 +43,14 @@
     //////////
 
 
+    // 工具
     var util = {
+        /**
+         * 扩展要检测的browser cpu device engine os
+         * @param {Object} regexes 
+         * @param {Object} extensions 
+         * @returns {Object} 扩展的reg
+         */
         extend : function (regexes, extensions) {
             var margedRegexes = {};
             for (var i in regexes) {
@@ -55,6 +62,12 @@
             }
             return margedRegexes;
         },
+        /**
+         * 检测str2里是否包含str1
+         * @param {String} str1 被包含的字符串
+         * @param {String} str2 包含的字符串
+         * @returns {boolean} 检测str2里是否包含str1
+         */
         has : function (str1, str2) {
           if (typeof str1 === "string") {
             return str2.toLowerCase().indexOf(str1.toLowerCase()) !== -1;
@@ -62,12 +75,27 @@
             return false;
           }
         },
+        /**
+         * 将str转换为小写
+         * @param {String} str 带转换的字符串
+         * @returns {String} str的小写形式
+         */
         lowerize : function (str) {
             return str.toLowerCase();
         },
+        /**
+         * 获取.分割的版本号的主版本号
+         * @param {String|any} version 版本号字符串
+         * @returns {String} 主版本号, 输入的不是字符串返回undefined
+         */
         major : function (version) {
             return typeof(version) === STR_TYPE ? version.replace(/[^\d\.]/g,'').split(".")[0] : undefined;
         },
+        /**
+         * 去掉字符串首尾空格
+         * @param {String} str 要去首尾空格的字符串
+         * @returns {String} 去掉首尾空格后的字符串
+         */
         trim : function (str) {
           return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
         }
@@ -81,6 +109,11 @@
 
     var mapper = {
 
+        /**
+         * @todo ??这个方法还要好好看下
+         * @param {String} ua ua
+         * @param {Array} arrays 一个n维数组, 偶数行是正则, 基数行是[name,version](regexes.browser)
+         */
         rgx : function (ua, arrays) {
 
             //var result = {},
@@ -120,6 +153,7 @@
                                     }
                                 } else if (q.length == 3) {
                                     // check whether function or regex
+                                    //// ///// mapper.str方法
                                     if (typeof q[1] === FUNC_TYPE && !(q[1].exec && q[1].test)) {
                                         // call function (usually string mapper)
                                         this[q[0]] = match ? q[1].call(this, match, q[2]) : undefined;
@@ -142,6 +176,12 @@
             //return this;
         },
 
+        /**
+         * @todo
+         * @param {String} str 
+         * @param {Object} map 
+         * @returns {}
+         */
         str : function (str, map) {
 
             for (var i in map) {
@@ -227,20 +267,27 @@
 
     var regexes = {
 
-        browser : [[
+        browser : [
+            [
 
             // Presto based
             /(opera\smini)\/([\w\.-]+)/i,                                       // Opera Mini
             /(opera\s[mobiletab]+).+version\/([\w\.-]+)/i,                      // Opera Mobi/Tablet
             /(opera).+version\/([\w\.]+)/i,                                     // Opera > 9.80
             /(opera)[\/\s]+([\w\.]+)/i                                          // Opera < 9.80
-            ], [NAME, VERSION], [
-
+            ], 
+            [NAME, VERSION], 
+            [
             /(opios)[\/\s]+([\w\.]+)/i                                          // Opera mini on iphone >= 8.0
-            ], [[NAME, 'Opera Mini'], VERSION], [
-
+            ], 
+            [
+                [NAME, 'Opera Mini'], VERSION
+            ],
+            [
             /\s(opr)\/([\w\.]+)/i                                               // Opera Webkit
-            ], [[NAME, 'Opera'], VERSION], [
+            ],
+            [[NAME, 'Opera'], VERSION], 
+            [
 
             // Mixed
             /(kindle)\/([\w\.]+)/i,                                             // Kindle
@@ -354,11 +401,12 @@
             ], [VERSION, NAME], [
 
             /webkit.+?(gsa)\/([\w\.]+).+?(mobile\s?safari|safari)(\/[\w\.]+)/i  // Google Search Appliance on iOS
-            ], [[NAME, 'GSA'], VERSION], [
+            ], [[NAME, 'GSA'], VERSION], 
+            [
 
             /webkit.+?(mobile\s?safari|safari)(\/[\w\.]+)/i                     // Safari < 3.0
             ], [NAME, [VERSION, mapper.str, maps.browser.oldsafari.version]], [
-
+                // 这里
             /(konqueror)\/([\w\.]+)/i,                                          // Konqueror
             /(webkit|khtml)\/([\w\.]+)/i
             ], [NAME, VERSION], [
@@ -931,6 +979,12 @@
     var Engine = Browser;
     var OS = Browser;
     */
+
+   /**
+    * 
+    * @param {[Object|String]} uastring ua字符串形式, 或者扩展要检测的browser对象(maps), 可选
+    * @param {*} extensions 
+    */
     var UAParser = function (uastring, extensions) {
 
         if (typeof uastring === 'object') {
@@ -950,32 +1004,71 @@
         //var engine = new Engine();
         //var os = new OS();
 
+        /**
+         * 获取浏览器信息
+         * @returns {Object} browser
+         * - browser.name {String} 浏览器名
+         * - browser.version {String} 浏览器版本号
+         */
         this.getBrowser = function () {
             var browser = { name: undefined, version: undefined };
             mapper.rgx.call(browser, ua, rgxmap.browser);
             browser.major = util.major(browser.version); // deprecated
             return browser;
         };
+
+        /**
+         * 获取cpu信息
+         * @returns {Object} cpu
+         * - cpu.architecture {String} 浏览器架构
+         * @example amd64|arm等
+         */
         this.getCPU = function () {
             var cpu = { architecture: undefined };
             mapper.rgx.call(cpu, ua, rgxmap.cpu);
             return cpu;
         };
+        /**
+         * 获取设备信息
+         * @returns {Object} device
+         * - device.verdor {String}
+         * - device.model {String}
+         * - device.type {String}
+         */
         this.getDevice = function () {
             var device = { vendor: undefined, model: undefined, type: undefined };
             mapper.rgx.call(device, ua, rgxmap.device);
             return device;
         };
+
+        /**
+         * 获取浏览器内核
+         * @returns {Object} engine
+         * - engine.name {String} 名 如presto,webkit等
+         * - engine.version {String} 版本号
+         */
         this.getEngine = function () {
             var engine = { name: undefined, version: undefined };
             mapper.rgx.call(engine, ua, rgxmap.engine);
             return engine;
         };
+        /**
+         * 获取操作系统信息
+         * @returns {Object} os
+         * - os.name {String}
+         * - os.version {String}
+         */
         this.getOS = function () {
             var os = { name: undefined, version: undefined };
             mapper.rgx.call(os, ua, rgxmap.os);
             return os;
         };
+
+        /**
+         * 获取ua,浏览器信息,内核信息,cpu信息,设备信息,操作系统信息
+         * @returns {Object} result
+         * 
+         */
         this.getResult = function () {
             return {
                 ua      : this.getUA(),
@@ -986,9 +1079,20 @@
                 cpu     : this.getCPU()
             };
         };
+
+        /**
+         * 获取原始ua
+         * @returns {String}
+         */
         this.getUA = function () {
             return ua;
         };
+        /**
+         * 设置ua
+         * @param {String} uastring
+         * @returns {Object}
+         * 支持链式调用
+         */
         this.setUA = function (uastring) {
             ua = uastring;
             //browser = new Browser();
@@ -1053,6 +1157,7 @@
                 }
                 process.stdout.write(JSON.stringify(res, null, 2) + '\n');
             };
+            // 牛皮牛皮啊
             if (process.stdin.isTTY) {
                 // via args
                 jsonize(process.argv.slice(2));
